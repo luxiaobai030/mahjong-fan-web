@@ -1,0 +1,19 @@
+{
+  "name": "麻将算番 · 拍照识牌",
+  "short_name": "麻将算番",
+  "description": "拍照或点牌录入手牌，按国标 / 日麻 / 四川 / 广东 / 台湾 / 香港规则算番，附带番种大全。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#0e1a15",
+  "theme_color": "#12241c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

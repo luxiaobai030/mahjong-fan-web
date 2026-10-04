@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12241c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="麻将算番">
+<meta name="format-detection" content="telephone=no">
+<title>麻将算番 · 拍照识牌</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">🀄</span>
+    <div class="brand-text">
+      <h1>麻将算番</h1>
+      <p id="ruleDesc">国标麻将</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button id="btnTable" class="icon-btn" type="button" aria-label="牌桌记分" title="牌桌记分">👥</button>
+    <button id="btnGlossary" class="icon-btn" type="button" aria-label="番种大全" title="番种大全">📖</button>
+    <button id="btnSettings" class="icon-btn" type="button" aria-label="识别设置">⚙</button>
+  </div>
+</header>
+
+<nav id="ruleTabs" class="rule-tabs" aria-label="规则选择"></nav>
+
+<main>
+
+  <section class="card">
+    <div class="card-head"><h2>拍照识牌</h2></div>
+    <div id="recogTabs" class="seg">
+      <button type="button" data-recog="local" class="active">本地切图</button>
+      <button type="button" data-recog="ai">AI 识别</button>
+    </div>
+    <div class="btn-row mt-10">
+      <label class="primary-btn file-btn">
+        📷 拍照 / 选图
+        <input id="fileInput" type="file" accept="image/*" capture="environment" multiple hidden>
+      </label>
+      <button id="btnAiCfg" class="ghost-btn" type="button">识别设置</button>
+    </div>
+    <div id="aiStatus" class="ai-status" hidden></div>
+    <div id="photoPreview" class="photo-preview"></div>
+    <div id="localTools" hidden>
+      <div class="crops-head">
+        <span id="localCount" class="hint"></span>
+        <div class="head-actions">
+          <input id="localN" class="num-input" type="number" min="1" max="20" inputmode="numeric" placeholder="张数">
+          <button id="btnReslice" class="ghost-btn" type="button">重切</button>
+          <button id="btnLocalFill" class="primary-btn" type="button">填入手牌</button>
+        </div>
+      </div>
+      <div id="localCrops" class="crops"></div>
+    </div>
+    <div class="zone">
+      <div class="zone-label"><span>牌谱速录</span><span class="hint">手打更快时可跳过拍照</span></div>
+      <div class="input-row">
+        <input id="notation" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+               placeholder="如 123m456m789m123s55s">
+        <button id="btnApplyNotation" class="ghost-btn" type="button">填入</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="condCard">
+    <div class="card-head"><h2>和牌条件</h2></div>
+    <div id="condBody" class="cond-body"></div>
+  </section>
+
+  <section class="card result-card">
+    <div class="card-head">
+      <h2>算番结果</h2>
+      <div class="head-actions">
+        <button id="btnGlossary2" class="ghost-btn" type="button">📖 番种大全</button>
+      </div>
+    </div>
+    <div id="result" class="result-body"></div>
+  </section>
+
+</main>
+
+<section id="tileDock" class="dock" aria-label="点牌录入">
+  <div id="dockPanel" class="dock-panel">
+    <div id="dockGrip" class="dock-grip" role="button" tabindex="0" aria-label="上拉展开点牌录入">
+      <span></span>
+    </div>
+    <div id="dockBar" class="dock-bar">
+      <div class="dock-stats">
+        <span class="dock-stat"><b id="dockHand">0</b>手牌</span>
+        <span class="dock-stat"><b id="dockMeld">0</b>副露</span>
+        <span class="dock-stat" id="dockFlowerStat" hidden><b id="dockFlower">0</b>花牌</span>
+      </div>
+      <div class="head-actions">
+        <button id="btnUndo" class="ghost-btn btn-sm" type="button">撤销</button>
+        <button id="btnClear" class="ghost-btn btn-sm" type="button">清空</button>
+        <button id="btnDockToggle" class="icon-btn btn-sm" type="button" aria-label="展开点牌录入">▲</button>
+      </div>
+    </div>
+    <div class="dock-body">
+      <div class="zone">
+        <div class="zone-label"><span>手牌</span><span id="handHint" class="hint"></span></div>
+        <div id="handRow" class="tile-row"></div>
+      </div>
+      <div class="zone">
+        <div class="zone-label"><span>副露</span><span class="hint">吃 / 碰 / 杠</span></div>
+        <div id="meldRow" class="tile-row"></div>
+      </div>
+      <div class="zone" id="flowersZone" hidden>
+        <div class="zone-label"><span>花牌</span><span class="hint">点一下移除</span></div>
+        <div id="flowerRow" class="tile-row"></div>
+      </div>
+      <div class="dock-sub-head">
+        <span>点牌录入</span>
+        <label class="switch"><input type="checkbox" id="showNumber" checked><span>数字提示</span></label>
+      </div>
+      <div id="modeTabs" class="mode-tabs"></div>
+      <div id="palette" class="palette"></div>
+    </div>
+  </div>
+</section>
+
+<dialog id="dlgTable" class="dlg table-dlg">
+  <div class="dlg-form">
+    <h2>牌桌记分 <span id="tbCode" class="room-code"></span></h2>
+
+    <div id="tbLobby">
+      <p class="dlg-note">
+        手机上装了这个 App，点「我当主机」：你开个人热点，其他人连上热点、用浏览器打开地址就能进来，
+        不用电脑不用路由器。有电脑的话也可以跑 <code>node tools/serve.js</code>，
+        几台设备连同一个 WiFi，谁开一间房大家都输房间号进去。
+        都不方便就选「本机记分」，一台手机记四家。
+      </p>
+      <label class="field"><span>我的名字</span>
+        <input id="tbName" type="text" maxlength="8" autocomplete="off" placeholder="如 老张"></label>
+      <label class="field"><span>服务器地址</span>
+        <input id="tbServer" type="text" inputmode="url" autocomplete="off" placeholder="http://192.168.1.5:8000"></label>
+      <div class="btn-row">
+        <button id="tbCreate" class="primary-btn" type="button">开一间房</button>
+        <button id="tbJoin" class="ghost-btn" type="button">加入房间</button>
+        <button id="tbTest" class="ghost-btn" type="button">测试连接</button>
+      </div>
+      <div class="input-row">
+        <input id="tbJoinCode" type="text" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="6 位房间号">
+        <button id="tbLocal" class="ghost-btn" type="button">本机记分</button>
+      </div>
+      <div class="btn-row">
+        <button id="tbHost" class="ghost-btn" type="button">我当主机（不用电脑）</button>
+      </div>
+      <div id="tbHostBox" class="host-box" hidden>
+        <div class="host-line"><span>别人连你的热点，浏览器打开</span><b id="tbHostUrl"></b></div>
+        <p class="hint" id="tbHostTip"></p>
+        <div class="btn-row">
+          <button id="tbHostCopy" class="ghost-btn" type="button">复制地址</button>
+          <button id="tbHostStop" class="ghost-btn" type="button">停止当主机</button>
+        </div>
+      </div>
+      <div id="tbHint" class="hint"></div>
+    </div>
+
+    <div id="tbRoom" hidden>
+      <div class="round-bar">
+        <span id="tbRound" class="pill"></span>
+        <span id="tbPot" class="pill" hidden></span>
+        <button id="tbHostPill" class="pill host-pill" type="button" hidden></button>
+        <span id="tbWho" class="hint"></span>
+      </div>
+      <div id="tbSeats" class="seat-list"></div>
+
+      <div class="zone">
+        <div class="zone-label"><span>本局结算</span><span id="tbNeed" class="hint">选谁和牌</span></div>
+        <div class="cond-group"><span class="label">和牌</span><div id="tbWinner" class="seg"></div></div>
+        <div class="cond-group"><span class="label">自摸 / 放铳</span><div id="tbLoser" class="seg"></div></div>
+        <div class="input-row tb-nums">
+          <input id="tbFan" class="num-input" type="number" min="0" step="1" inputmode="numeric" placeholder="番/台">
+          <input id="tbFu" class="num-input" type="number" min="0" step="10" inputmode="numeric" placeholder="符">
+          <input id="tbAmount" class="num-input" type="number" min="0" step="100" inputmode="numeric" placeholder="直接点数">
+        </div>
+        <div id="tbPreview" class="points-preview"></div>
+        <div class="btn-row">
+          <button id="tbWin" class="primary-btn" type="button">记这一局</button>
+          <button id="tbDraw" class="ghost-btn" type="button">流局</button>
+          <button id="tbRiichi" class="ghost-btn" type="button">立直 −1000</button>
+        </div>
+      </div>
+
+      <div class="zone">
+        <div class="zone-label"><span>战绩</span><span class="hint">点一下能撤销最近一局</span></div>
+        <div id="tbLog" class="table-log"></div>
+      </div>
+
+      <details id="tbMore" class="tb-more">
+        <summary>房间设置</summary>
+        <div id="tbSettings" class="cond-body"></div>
+      </details>
+
+      <div class="btn-row">
+        <button id="tbCopy" class="ghost-btn" type="button">复制战绩</button>
+        <button id="tbReset" class="ghost-btn" type="button">清空战绩</button>
+        <button id="tbLeave" class="ghost-btn" type="button">退出牌桌</button>
+        <button id="tbClose" class="primary-btn" type="button">收起</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlgAi" class="dlg">
+  <form method="dialog" class="dlg-form">
+    <h2>识别设置</h2>
+    <p class="dlg-note">拍照识牌需要调用视觉大模型。Key 只保存在本机浏览器里，不会上传到别处。</p>
+    <label class="field">
+      <span>服务商</span>
+      <select id="aiProvider"></select>
+    </label>
+    <label class="field">
+      <span>接口地址</span>
+      <input id="aiBaseUrl" type="url" autocomplete="off" placeholder="https://api.openai.com/v1">
+    </label>
+    <label class="field">
+      <span>模型名</span>
+      <input id="aiModel" type="text" autocomplete="off" placeholder="gpt-4o">
+    </label>
+    <label class="field">
+      <span>API Key</span>
+      <input id="aiKey" type="password" autocomplete="off" placeholder="sk-...">
+    </label>
+    <label class="switch"><input type="checkbox" id="aiRemember" checked><span>记住设置</span></label>
+    <div class="dlg-actions">
+      <button value="cancel" class="ghost-btn" type="submit">关闭</button>
+      <button value="save" class="primary-btn" type="submit" id="btnAiSave">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="js/tiles.js"></script>
+<script src="js/decompose.js"></script>
+<script src="js/hand.js"></script>
+<script src="js/render.js"></script>
+<script src="js/score.js"></script>
+<script src="js/room-core.js"></script>
+<script src="server/rooms.js"></script>
+<script src="js/rules/common.js"></script>
+<script src="js/rules/mcr.js"></script>
+<script src="js/rules/riichi.js"></script>
+<script src="js/rules/sichuan.js"></script>
+<script src="js/rules/guangdong.js"></script>
+<script src="js/rules/taiwan.js"></script>
+<script src="js/rules/hongkong.js"></script>
+<script src="js/rules/index.js"></script>
+<script src="js/glossary.js"></script>
+<script src="js/vision-local.js"></script>
+<script src="js/recognize.js"></script>
+<script src="js/app.js"></script>
+<script src="js/glossary-page.js"></script>
+<script src="js/host.js"></script>
+<script src="js/lan.js"></script>
+</body>
+</html>
