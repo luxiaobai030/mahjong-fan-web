@@ -381,9 +381,11 @@
       }
     })();
     (function () {
-      var n = 0;
-      for (var i = 0; i < F.triplets.length; i++) if (T.isTerminalOrHonor(F.triplets[i].tile)) n++;
-      if (n > 0) add('幺九刻', n);
+      var names = [];
+      for (var i = 0; i < F.triplets.length; i++) {
+        if (T.isTerminalOrHonor(F.triplets[i].tile)) names.push(T.name(F.triplets[i].tile));
+      }
+      if (names.length) add('幺九刻', names.length, names.join('、') + ' 的刻子，每副 1 番');
     })();
     if (F.minkan.length === 1) add('明杠', 1);
     if (F.missingSuits === 1) add('缺一门', 1);

@@ -1,5 +1,5 @@
 /* 离线缓存：装到手机主屏后没网也能算番 */
-var CACHE = 'mahjong-fan-v3';
+var CACHE = 'mahjong-fan-v4';
 var ASSETS = [
   './',
   'index.html',
@@ -20,6 +20,7 @@ var ASSETS = [
   'js/glossary.js',
   'js/glossary-page.js',
   'js/vision-local.js',
+  'js/vision-ml.js',
   'js/recognize.js',
   'js/score.js',
   'js/room-core.js',

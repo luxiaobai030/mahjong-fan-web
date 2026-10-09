@@ -1010,6 +1010,24 @@
     });
   }
 
+  /* 本地模型的结果本身就带牌名和边框，直接拿来用，省掉逐张点选 */
+  function applyDetections(dets) {
+    var pad = Math.max(2, Math.round(sliceSrc.w * 0.012));
+    slices = dets.map(function (d) {
+      var rect = V.padRect({
+        x0: Math.round(d.x1), y0: Math.round(d.y1),
+        x1: Math.round(d.x2), y1: Math.round(d.y2)
+      }, pad, sliceSrc.w, sliceSrc.h);
+      var t = T.fromCode(d.tile);
+      return {
+        rect: rect,
+        url: V.cropDataUrl(sliceSrc.img, rect, sliceSrc.scale),
+        tile: (t === undefined || t === null) ? null : t,
+        score: d.score
+      };
+    });
+  }
+
   function nextUnset(from) {
     for (var i = from; i < slices.length; i++) if (slices[i].tile === null) return i;
     return -1;
@@ -1067,7 +1085,13 @@
 
       var name = document.createElement('div');
       name.className = 'crop-name';
-      name.textContent = s.tile === null ? '点一下选牌' : T.name(s.tile);
+      if (s.tile === null) {
+        name.textContent = '点一下选牌';
+      } else {
+        name.textContent = T.name(s.tile) +
+          (s.score === undefined ? '' : ' ' + Math.round(s.score * 100) + '%');
+        if (s.score !== undefined && s.score < 0.5) item.classList.add('is-unsure');
+      }
       item.appendChild(name);
 
       item.addEventListener('click', function () { pickSlice(i); });
@@ -1081,21 +1105,30 @@
     var extra = files.length > 1 ? '（选了 ' + files.length + ' 张图，本地切图只用第一张）' : '';
     elPreview.innerHTML = '';
     clearSlices();
-    setAiStatus('<span class="spinner"></span>正在本地切图…', 'loading');
+    var ML = globalThis.MJ.VisionML;
+    setAiStatus('<span class="spinner"></span>' + (ML && ML.recognize ? '正在用本地模型识牌…' : '正在本地切图…'), 'loading');
     V.analyzeFile(file).then(function (res) {
       sliceSrc = res;
-      var solid = res.ok && res.cols.length >= 2 && res.confidence >= 0.3;
-      if (solid) {
-        applyRects(res.cols);
+      if (!ML || !ML.recognize) return null;
+      return ML.recognize(res.img, { conf: 0.25 }).catch(function () { return null; });
+    }).then(function (ml) {
+      if (ml && ml.tiles && ml.tiles.length >= 4) {
+        applyDetections(ml.tiles);
+        var sure = ml.tiles.filter(function (d) { return d.score >= 0.5; }).length;
+        setAiStatus('本地模型认出 ' + slices.length + ' 张牌（' + sure + ' 张很有把握），已经替你填好了。' +
+          '点小图可以改，核对完点「填入手牌」。' + extra,
+          sure * 2 >= slices.length ? 'ok' : 'warn');
+      } else if (sliceSrc.ok && sliceSrc.cols.length >= 2 && sliceSrc.confidence >= 0.3) {
+        applyRects(sliceSrc.cols);
         setAiStatus('本地切出 ' + slices.length + ' 张，牌宽挺齐（把握 ' +
-          Math.round(res.confidence * 100) + '%）。点小图选牌名，全选完点「填入手牌」。' + extra,
-          res.confidence >= 0.5 ? 'ok' : 'warn');
-      } else if (res.ok && res.cols.length >= 2) {
-        applyRects(res.cols);
-        setAiStatus('这照片切得不太齐（把握 ' + Math.round(res.confidence * 100) +
+          Math.round(sliceSrc.confidence * 100) + '%）。点小图选牌名，全选完点「填入手牌」。' + extra,
+          sliceSrc.confidence >= 0.5 ? 'ok' : 'warn');
+      } else if (sliceSrc.ok && sliceSrc.cols.length >= 2) {
+        applyRects(sliceSrc.cols);
+        setAiStatus('这照片切得不太齐（把握 ' + Math.round(sliceSrc.confidence * 100) +
           '%），可能是桌面全景或牌有重叠。请在张数里填好张数点「重切」，或换一张只拍一排牌的。' + extra, 'warn');
       } else {
-        applyRects(V.splitEven(res.box, 14));
+        applyRects(V.splitEven(sliceSrc.box, 14));
         setAiStatus('没认出一整行牌，先按 14 张均分。填个「张数」再点「重切」可纠正。' + extra, 'warn');
       }
       renderSlices();

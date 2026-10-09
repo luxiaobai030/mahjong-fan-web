@@ -892,6 +892,8 @@ button, .file-btn { font-family: inherit; }
   text-overflow: ellipsis;
 }
 .crop-item.is-set .crop-name { color: var(--green); }
+.crop-item.is-unsure .crop-shot { border-color: var(--gold); }
+.crop-item.is-unsure .crop-name { color: var(--gold); }
 .crop-del {
   position: absolute;
   top: 2px;
